@@ -1,0 +1,20 @@
+[project]
+name = "pants-basedpyright"
+version = "0.1.0"
+description = "Pantsbuild plugin for basedpyright type checking"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = [
+    "pantsbuild.pants>=2.27.0,<2.28.0",
+    "pantsbuild.pants.testutil>=2.27.0,<2.28.0"
+]
+
+[tool.uv.sources]
+"pantsbuild.pants" = {index = "pants-wheels"}
+"pantsbuild.pants.testutil" = {index = "pants-wheels"}
+
+[[tool.uv.index]]
+name = "pants-wheels"
+url = "https://wheels.pantsbuild.org/simple/"
