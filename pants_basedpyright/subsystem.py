@@ -78,7 +78,9 @@ class BasedPyright(PythonToolBase):
 
         return await Get(
             Digest,
-            MergeDigests((config_files.snapshot.digest, config_files_pyright.snapshot.digest)),
+            MergeDigests(
+                (config_files.snapshot.digest, config_files_pyright.snapshot.digest)
+            ),
         )
 
 

@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 from pants.backend.python.subsystems.setup import PythonSetup
-from pants.backend.python.util_rules.interpreter_constraints import InterpreterConstraints
+from pants.backend.python.util_rules.interpreter_constraints import (
+    InterpreterConstraints,
+)
 from pants.backend.python.util_rules.partition import (
     _partition_by_interpreter_constraints_and_resolve,
 )
@@ -14,6 +16,7 @@ from pants.util.ordered_set import FrozenOrderedSet, OrderedSet
 from pants_basedpyright.fieldset import BasedPyrightFieldSet
 from pants_basedpyright.request import BasedPyrightRequest
 from pants_basedpyright.subsystem import BasedPyright
+
 
 @dataclass(frozen=True)
 class BasedPyrightPartition:
@@ -39,7 +42,9 @@ async def partition_basedpyright(
     basedpyright: BasedPyright,
 ) -> BasedPyrightPartitions:
     resolve_and_interpreter_constraints_to_field_sets = (
-        _partition_by_interpreter_constraints_and_resolve(request.field_sets, python_setup)
+        _partition_by_interpreter_constraints_and_resolve(
+            request.field_sets, python_setup
+        )
     )
 
     coarsened_targets = await coarsened_targets_get(
@@ -53,7 +58,8 @@ async def partition_basedpyright(
             FrozenOrderedSet(field_sets),
             CoarsenedTargets(
                 OrderedSet(
-                    coarsened_targets_by_address[field_set.address] for field_set in field_sets
+                    coarsened_targets_by_address[field_set.address]
+                    for field_set in field_sets
                 ),
             ),
             resolve if len(python_setup.resolves) > 1 else None,

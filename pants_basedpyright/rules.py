@@ -17,7 +17,10 @@ from pants.backend.python.util_rules.python_sources import (
 )
 from pants.core.goals.check import CheckRequest, CheckResult, CheckResults
 from pants.core.util_rules import config_files
-from pants.core.util_rules.source_files import SourceFilesRequest, determine_source_files
+from pants.core.util_rules.source_files import (
+    SourceFilesRequest,
+    determine_source_files,
+)
 from pants.engine.fs import Digest, MergeDigests
 from pants.engine.intrinsics import execute_process
 from pants.engine.rules import Get, collect_rules, concurrently, implicitly, rule
@@ -154,7 +157,9 @@ async def run_basedpyright(
 
     basedpyright_venv_pex_request = create_venv_pex(
         **implicitly(
-            basedpyright.to_pex_request(interpreter_constraints=partition.interpreter_constraints)
+            basedpyright.to_pex_request(
+                interpreter_constraints=partition.interpreter_constraints
+            )
         )
     )
 
