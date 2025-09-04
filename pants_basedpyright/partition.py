@@ -11,9 +11,9 @@ from pants.engine.rules import collect_rules, implicitly, rule
 from pants.engine.target import CoarsenedTargets, CoarsenedTargetsRequest
 from pants.util.ordered_set import FrozenOrderedSet, OrderedSet
 
-from .fieldset import BasedPyrightFieldSet
-from .request import BasedPyrightRequest
-
+from pants_basedpyright.fieldset import BasedPyrightFieldSet
+from pants_basedpyright.request import BasedPyrightRequest
+from pants_basedpyright.subsystem import BasedPyright
 
 @dataclass(frozen=True)
 class BasedPyrightPartition:
@@ -36,6 +36,7 @@ class BasedPyrightPartitions(Collection[BasedPyrightPartition]):
 async def partition_basedpyright(
     request: BasedPyrightRequest,
     python_setup: PythonSetup,
+    basedpyright: BasedPyright,
 ) -> BasedPyrightPartitions:
     resolve_and_interpreter_constraints_to_field_sets = (
         _partition_by_interpreter_constraints_and_resolve(request.field_sets, python_setup)
@@ -56,7 +57,7 @@ async def partition_basedpyright(
                 ),
             ),
             resolve if len(python_setup.resolves) > 1 else None,
-            interpreter_constraints,
+            interpreter_constraints or basedpyright.interpreter_constraints,
         )
         for (
             resolve,

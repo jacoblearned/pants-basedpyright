@@ -26,9 +26,9 @@ from pants.util.logging import LogLevel
 from pants.util.ordered_set import OrderedSet
 from pants.util.strutil import pluralize
 
-from .partition import BasedPyrightPartition, partition_basedpyright
-from .request import BasedPyrightRequest
-from .subsystem import BasedPyright
+from pants_basedpyright.partition import BasedPyrightPartition, partition_basedpyright
+from pants_basedpyright.request import BasedPyrightRequest
+from pants_basedpyright.subsystem import BasedPyright
 
 # async def _patch_config_file(
 #     config_files: ConfigFiles, venv_dir: str, source_roots: Iterable[str]
