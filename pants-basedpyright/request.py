@@ -1,9 +1,9 @@
-from pants.core.goals.lint import LintTargetsRequest
+from pants.core.goals.check import CheckRequest
 
 from .fieldset import BasedPyrightFieldSet
 from .subsystem import BasedPyright
 
 
-class BasedPyrightRequest(LintTargetsRequest):
+class BasedPyrightRequest(CheckRequest):
     field_set_type = BasedPyrightFieldSet
-    tool_subsystem = BasedPyright
+    tool_name = BasedPyright.options_scope

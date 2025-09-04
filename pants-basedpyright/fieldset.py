@@ -13,8 +13,7 @@ from .skip_field import SkipBasedPyrightField
 @dataclass(frozen=True)
 class BasedPyrightFieldSet(FieldSet):
     required_fields = (PythonSourceField,)
-
-    source: PythonSourceField
+    sources: PythonSourceField
     resolve: PythonResolveField
     interpreter_constraints: InterpreterConstraintsField
 

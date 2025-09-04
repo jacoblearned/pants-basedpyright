@@ -1,157 +1,249 @@
-from dataclasses import dataclass
+import os
+from collections.abc import Iterable
+from typing import Optional
 
 from pants.backend.python.subsystems.setup import PythonSetup
 from pants.backend.python.util_rules import pex_from_targets
-from pants.backend.python.util_rules.interpreter_constraints import (
-    InterpreterConstraints,
+from pants.backend.python.util_rules.pex import (
+    PexRequest,
+    VenvPexProcess,
+    create_pex,
+    create_venv_pex,
 )
-from pants.backend.python.util_rules.partition import (
-    _partition_by_interpreter_constraints_and_resolve,
-)
-from pants.backend.python.util_rules.pex import VenvPexProcess, create_venv_pex
-from pants.backend.python.util_rules.pex_environment import PexEnvironment
+from pants.backend.python.util_rules.pex_from_targets import RequirementsPexRequest
 from pants.backend.python.util_rules.python_sources import (
     PythonSourceFilesRequest,
     prepare_python_sources,
 )
-from pants.core.goals.lint import (
-    AbstractLintRequest,
-    LintResult,
-    Partitions,
-)
-from pants.core.util_rules.partitions import Partition
+from pants.core.goals.check import CheckRequest, CheckResult, CheckResults
+from pants.core.util_rules import config_files
+from pants.core.util_rules.source_files import SourceFilesRequest, determine_source_files
 from pants.engine.fs import Digest, MergeDigests
-from pants.engine.internals.graph import coarsened_targets as coarsened_targets_get
-from pants.engine.intrinsics import (
-    execute_process,
-)
-from pants.engine.rules import (
-    Get,
-    collect_rules,
-    concurrently,
-    implicitly,
-    rule,
-)
-from pants.engine.target import CoarsenedTargets, CoarsenedTargetsRequest
+from pants.engine.intrinsics import execute_process
+from pants.engine.rules import Get, collect_rules, concurrently, implicitly, rule
+from pants.engine.unions import UnionRule
 from pants.util.logging import LogLevel
+from pants.util.ordered_set import OrderedSet
 from pants.util.strutil import pluralize
 
-from .fieldset import BasedPyrightFieldSet
+from .partition import BasedPyrightPartition, partition_basedpyright
 from .request import BasedPyrightRequest
 from .subsystem import BasedPyright
 
+# async def _patch_config_file(
+#     config_files: ConfigFiles, venv_dir: str, source_roots: Iterable[str]
+# ) -> Digest:
+#     """Patch the Pyright config file to use the incoming venv directory (from
+#     requirements_venv_pex). If there is no config file, create a dummy pyrightconfig.json with the
+#     `venv` key populated.
 
-@dataclass(frozen=True)
-class PartitionMetadata:
-    coarsened_targets: CoarsenedTargets
-    resolve_description: str | None
-    interpreter_constraints: InterpreterConstraints
+#     The incoming venv directory works alongside the `--venvpath` CLI argument.
 
-    @property
-    def description(self) -> str:
-        ics = str(sorted(str(c) for c in self.interpreter_constraints))
-        return f"{self.resolve_description}, {ics}" if self.resolve_description else ics
+#     Additionally, add source roots to the `extraPaths` key in the config file.
+#     """
+
+#     source_roots_list = list(source_roots)
+#     if not config_files.snapshot.files:
+#         # venv workaround as per: https://github.com/microsoft/pyright/issues/4051
+#         generated_config: dict[str, str | list[str]] = {
+#             "venv": venv_dir,
+#             "extraPaths": source_roots_list,
+#         }
+#         return await create_digest(
+#             CreateDigest(
+#                 [
+#                     FileContent(
+#                         "pyrightconfig.json",
+#                         json.dumps(generated_config).encode(),
+#                     )
+#                 ]
+#             )
+#         )
+
+#     config_contents = await get_digest_contents(config_files.snapshot.digest)
+#     new_files: list[FileContent] = []
+#     for file in config_contents:
+#         # This only supports a single json config file in the root of the project
+#         # https://github.com/pantsbuild/pants/issues/17816 tracks supporting multiple config files and workspaces
+#         if file.path == "pyrightconfig.json":
+#             json_config = json.loads(file.content)
+#             json_config["venv"] = venv_dir
+#             json_extra_paths: list[str] = json_config.get("extraPaths", [])
+#             json_config["extraPaths"] = list(OrderedSet(json_extra_paths + source_roots_list))
+#             new_content = json.dumps(json_config).encode()
+#             new_files.append(replace(file, content=new_content))
+
+#         # This only supports a single pyproject.toml file in the root of the project
+#         # https://github.com/pantsbuild/pants/issues/17816 tracks supporting multiple config files and workspaces
+#         elif file.path == "pyproject.toml":
+#             toml_config = toml.loads(file.content.decode())
+#             pyright_config = toml_config["tool"]["pyright"]
+#             pyright_config["venv"] = venv_dir
+#             toml_extra_paths: list[str] = pyright_config.get("extraPaths", [])
+#             pyright_config["extraPaths"] = list(OrderedSet(toml_extra_paths + source_roots_list))
+#             new_content = toml.dumps(toml_config).encode()
+#             new_files.append(replace(file, content=new_content))
+
+#     return await create_digest(CreateDigest(new_files))
 
 
-def generate_argv(
-    field_sets: tuple[BasedPyrightFieldSet, ...], basedpyright: BasedPyright
+def determine_python_files(files: Iterable[str]) -> tuple[str, ...]:
+    """We run over all .py and .pyi files, but .pyi files take precedence.
+
+    MyPy will error if we say to run over the same module with both its
+    .py and .pyi files, so we must be careful to only use the .pyi stub.
+    """
+    result: OrderedSet[str] = OrderedSet()
+    for f in files:
+        if f.endswith(".pyi"):
+            py_file = f[:-1]  # That is, strip the `.pyi` suffix to be `.py`.
+            result.discard(py_file)
+            result.add(f)
+        elif f.endswith(".py"):
+            pyi_file = f + "i"
+            if pyi_file not in result:
+                result.add(f)
+        else:
+            result.add(f)
+
+    return tuple(result)
+
+
+def _generate_argv(
+    source_files: tuple[str, ...],
+    python_path: str,
+    python_version: Optional[str],
+    basedpyright: BasedPyright,
 ) -> tuple[str, ...]:
     args = []
     args.extend(basedpyright.args)
-    args.extend(field_set.source.file_path for field_set in field_sets)
+    args.extend(["--pythonpath", python_path])
+
+    if python_version:
+        args.extend(["--pythonversion", python_version])
+
+    if basedpyright.config:
+        args.extend(["--project", basedpyright.config])
+
+    args.extend(os.path.join("{chroot}", source_file) for source_file in source_files)
     return tuple(args)
 
 
-async def _run_basedpyright(
-    request: AbstractLintRequest.Batch[BasedPyrightFieldSet, PartitionMetadata],
+@rule
+async def run_basedpyright(
+    partition: BasedPyrightPartition,
     basedpyright: BasedPyright,
-    pex_environment: PexEnvironment,
-) -> LintResult:
-    # The coarsened targets in the incoming request are for all targets in the request's original
-    # partition. Since the core `lint` logic re-batches inputs according to `[lint].batch_size`,
-    # this could be many more targets than are actually needed to lint the specific batch of files
-    # received by this rule. Subset the CTs one more time here to only those that are relevant.
-    all_coarsened_targets_by_address = request.partition_metadata.coarsened_targets.by_address()
-    coarsened_targets = CoarsenedTargets(
-        all_coarsened_targets_by_address[field_set.address] for field_set in request.elements
-    )
-    coarsened_closure = tuple(coarsened_targets.closure())
-
-    basedpyright_venv_pex_request = create_venv_pex(**implicitly(basedpyright.to_pex_request()))
-
-    sources_request = prepare_python_sources(
-        PythonSourceFilesRequest(coarsened_closure), **implicitly()
+    python_setup: PythonSetup,
+) -> CheckResult:
+    root_sources_request = determine_source_files(
+        SourceFilesRequest(fs.sources for fs in partition.field_sets)
     )
 
-    basedpyright_pex, sources = await concurrently(basedpyright_venv_pex_request, sources_request)
+    closure_sources_get = prepare_python_sources(
+        PythonSourceFilesRequest(partition.root_targets.closure()), **implicitly()
+    )
+
+    requirements_pex_get = create_pex(
+        **implicitly(
+            RequirementsPexRequest(
+                (fs.address for fs in partition.field_sets),
+                hardcoded_interpreter_constraints=partition.interpreter_constraints,
+            )
+        )
+    )
+
+    basedpyright_venv_pex_request = create_venv_pex(
+        **implicitly(
+            basedpyright.to_pex_request(interpreter_constraints=partition.interpreter_constraints)
+        )
+    )
+
+    (
+        requirements_pex,
+        basedpyright_pex,
+        root_sources,
+        closure_sources,
+        config_files_digest,
+    ) = await concurrently(
+        requirements_pex_get,
+        basedpyright_venv_pex_request,
+        root_sources_request,
+        closure_sources_get,
+        basedpyright.get_config_files(),
+    )
+
+    requirements_venv_pex = await create_venv_pex(
+        **implicitly(
+            PexRequest(
+                output_filename="requirements_venv.pex",
+                internal_only=True,
+                pex_path=[requirements_pex],
+                interpreter_constraints=partition.interpreter_constraints,
+            )
+        )
+    )
 
     input_digest = await Get(
         Digest,
-        MergeDigests((basedpyright_pex.digest, sources.source_files.snapshot.digest)),
+        MergeDigests(
+            (
+                closure_sources.source_files.snapshot.digest,
+                config_files_digest,
+                basedpyright_pex.digest,
+                requirements_venv_pex.digest,
+            )
+        ),
     )
 
-    pythonpath = list(sources.source_roots)
+    argv = _generate_argv(
+        source_files=root_sources.snapshot.files,
+        python_path=requirements_venv_pex.python.argv0,
+        python_version=partition.interpreter_constraints.minimum_python_version(
+            python_setup.interpreter_versions_universe
+        ),
+        basedpyright=basedpyright,
+    )
+
+    env = {
+        "PEX_EXTRA_SYS_PATH": ":".join(list(closure_sources.source_roots)),
+    }
     result = await execute_process(
         **implicitly(
             VenvPexProcess(
                 basedpyright_pex,
-                description=f"Run basedpyright on {pluralize(len(request.elements), 'file')}.",
-                argv=generate_argv(request.elements, basedpyright),
+                description=f"Run basedpyright on {pluralize(len(root_sources.snapshot.files), 'file')}.",
+                argv=argv,
                 input_digest=input_digest,
-                extra_env={"PEX_EXTRA_SYS_PATH": ":".join(pythonpath)},
+                extra_env=env,
                 level=LogLevel.DEBUG,
             ),
         )
     )
-    return LintResult.create(request, result)
-
-
-@rule
-async def partition_basedpyright(
-    request: BasedPyrightRequest.PartitionRequest[BasedPyrightFieldSet],
-    basedpyright: BasedPyright,
-    python_setup: PythonSetup,
-) -> Partitions:
-    resolve_and_interpreter_constraints_to_field_sets = (
-        _partition_by_interpreter_constraints_and_resolve(request.field_sets, python_setup)
-    )
-
-    coarsened_targets = await coarsened_targets_get(
-        CoarsenedTargetsRequest(field_set.address for field_set in request.field_sets),
-        **implicitly(),
-    )
-    coarsened_targets_by_address = coarsened_targets.by_address()
-
-    return Partitions(
-        Partition(
-            tuple(field_sets),
-            PartitionMetadata(
-                CoarsenedTargets(
-                    coarsened_targets_by_address[field_set.address] for field_set in field_sets
-                ),
-                resolve if len(python_setup.resolves) > 1 else None,
-                InterpreterConstraints.merge((basedpyright.interpreter_constraints,)),
-            ),
-        )
-        for (
-            resolve,
-            _,
-        ), field_sets in resolve_and_interpreter_constraints_to_field_sets.items()
+    return CheckResult.from_fallible_process_result(
+        result,
+        partition_description=partition.description,
     )
 
 
 @rule
-async def basedpyright_lint(
-    request: BasedPyrightRequest.Batch,
+async def basedpyright_check(
+    request: BasedPyrightRequest,
     basedpyright: BasedPyright,
-    pex_environment: PexEnvironment,
-) -> LintResult:
-    return await _run_basedpyright(request, basedpyright, pex_environment)
+) -> CheckResults:
+    if basedpyright.skip:
+        return CheckResults([], checker_name=request.tool_name)
+
+    partitions = await partition_basedpyright(request, **implicitly())
+    partitioned_results = await concurrently(
+        run_basedpyright(partition, **implicitly()) for partition in partitions
+    )
+    return CheckResults(partitioned_results, checker_name=request.tool_name)
 
 
 def rules():
     return [
         *collect_rules(),
-        *BasedPyrightRequest.rules(),
+        *config_files.rules(),
         *pex_from_targets.rules(),
+        UnionRule(CheckRequest, BasedPyrightRequest),
     ]
