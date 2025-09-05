@@ -131,7 +131,7 @@ def assert_success(
     all_major_minor_python_versions(BasedPyright.default_interpreter_constraints),
 )
 def test_passing(rule_runner: PythonRuleRunner, major_minor_interpreter: str) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {f"{PACKAGE}/f.py": GOOD_FILE, f"{PACKAGE}/BUILD": "python_sources()"}
     )
     tgt = rule_runner.get_target(Address(PACKAGE, relative_file_path="f.py"))
@@ -145,7 +145,7 @@ def test_passing(rule_runner: PythonRuleRunner, major_minor_interpreter: str) ->
 
 
 def test_failing(rule_runner: PythonRuleRunner) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {f"{PACKAGE}/f.py": BAD_FILE, f"{PACKAGE}/BUILD": "python_sources()"}
     )
     tgt = rule_runner.get_target(Address(PACKAGE, relative_file_path="f.py"))
@@ -157,7 +157,7 @@ def test_failing(rule_runner: PythonRuleRunner) -> None:
 
 
 def test_multiple_targets(rule_runner: PythonRuleRunner) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {
             f"{PACKAGE}/good.py": GOOD_FILE,
             f"{PACKAGE}/bad.py": BAD_FILE,
@@ -192,7 +192,7 @@ def test_multiple_targets(rule_runner: PythonRuleRunner) -> None:
 def test_json_config_file_fails(
     rule_runner: PythonRuleRunner, config_path: str, extra_args: list[str]
 ) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {
             f"{PACKAGE}/f.py": NEEDS_CONFIG_FILE,
             f"{PACKAGE}/BUILD": "python_sources()",
@@ -219,7 +219,7 @@ def test_json_config_file_fails(
 def test_json_config_file_succeeds(
     rule_runner: PythonRuleRunner, config_path: str, extra_args: list[str]
 ) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {
             f"{PACKAGE}/f.py": NEEDS_CONFIG_FILE,
             f"{PACKAGE}/BUILD": "python_sources()",
@@ -253,7 +253,7 @@ def test_toml_file_succeeds(
     extra_args: list[str],
     config_content: str,
 ) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {
             f"{PACKAGE}/f.py": NEEDS_CONFIG_FILE,
             f"{PACKAGE}/BUILD": "python_sources()",
@@ -265,7 +265,7 @@ def test_toml_file_succeeds(
 
 
 def test_passthrough_args(rule_runner: PythonRuleRunner) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {f"{PACKAGE}/f.py": NEEDS_CONFIG_FILE, f"{PACKAGE}/BUILD": "python_sources()"}
     )
     tgt = rule_runner.get_target(Address(PACKAGE, relative_file_path="f.py"))
@@ -278,7 +278,7 @@ def test_passthrough_args(rule_runner: PythonRuleRunner) -> None:
 
 
 def test_skip(rule_runner: PythonRuleRunner) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {f"{PACKAGE}/f.py": BAD_FILE, f"{PACKAGE}/BUILD": "python_sources()"}
     )
     tgt = rule_runner.get_target(Address(PACKAGE, relative_file_path="f.py"))
@@ -287,7 +287,7 @@ def test_skip(rule_runner: PythonRuleRunner) -> None:
 
 
 def test_thirdparty_dependency(rule_runner: PythonRuleRunner) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {
             "BUILD": (
                 "python_requirement(name='more-itertools', requirements=['more-itertools==8.4.0'])"
@@ -310,7 +310,7 @@ def test_thirdparty_dependency(rule_runner: PythonRuleRunner) -> None:
 
 
 def test_dependencies(rule_runner: PythonRuleRunner) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {
             f"{PACKAGE}/util/__init__.py": "",
             f"{PACKAGE}/util/lib.py": dedent(
@@ -343,7 +343,7 @@ def test_dependencies(rule_runner: PythonRuleRunner) -> None:
 
 
 def test_run_only_on_specified_files(rule_runner: PythonRuleRunner) -> None:
-    rule_runner.write_files(
+    _ = rule_runner.write_files(
         {
             f"{PACKAGE}/good.py": GOOD_FILE,
             f"{PACKAGE}/bad.py": BAD_FILE,

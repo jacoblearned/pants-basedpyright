@@ -5,11 +5,15 @@ from pants.backend.python.util_rules.interpreter_constraints import (
     InterpreterConstraints,
 )
 from pants.backend.python.util_rules.partition import (
-    _partition_by_interpreter_constraints_and_resolve,
+    _partition_by_interpreter_constraints_and_resolve,  # pyright:ignore[reportPrivateUsage]
 )
 from pants.engine.collection import Collection
 from pants.engine.internals.graph import coarsened_targets as coarsened_targets_get
-from pants.engine.rules import collect_rules, implicitly, rule
+from pants.engine.rules import (
+    collect_rules,
+    implicitly,  # pyright:ignore[reportUnknownVariableType]
+    rule,
+)
 from pants.engine.target import CoarsenedTargets, CoarsenedTargetsRequest
 from pants.util.ordered_set import FrozenOrderedSet, OrderedSet
 
@@ -49,7 +53,7 @@ async def partition_basedpyright(
 
     coarsened_targets = await coarsened_targets_get(
         CoarsenedTargetsRequest(field_set.address for field_set in request.field_sets),
-        **implicitly(),
+        **implicitly(),  # pyright:ignore[reportAny]
     )
     coarsened_targets_by_address = coarsened_targets.by_address()
 

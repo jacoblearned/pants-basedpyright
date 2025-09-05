@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import final
 
 from pants.backend.python.target_types import (
     InterpreterConstraintsField,
@@ -10,6 +11,7 @@ from pants.engine.target import FieldSet, Target
 from pants_basedpyright.skip_field import SkipBasedPyrightField
 
 
+@final
 @dataclass(frozen=True)
 class BasedPyrightFieldSet(FieldSet):
     required_fields = (PythonSourceField,)

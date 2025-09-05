@@ -1,3 +1,5 @@
+from typing import final
+
 from pants.backend.python.subsystems.python_tool_base import PythonToolBase
 from pants.backend.python.target_types import ConsoleScript
 from pants.core.goals.resolves import ExportableTool
@@ -9,6 +11,7 @@ from pants.option.option_types import ArgsListOption, BoolOption, FileOption, Sk
 from pants.util.strutil import softwrap
 
 
+@final
 class BasedPyright(PythonToolBase):
     """Checker for BasedPyright."""
 
@@ -28,7 +31,7 @@ class BasedPyright(PythonToolBase):
     config = FileOption(
         default=None,
         advanced=True,
-        help=lambda cls: softwrap(
+        help=softwrap(
             """
             Path to pyrightconfig.json or pyproject.toml file with [tool.basedpyright] or [tool.pyright] section
             (https://docs.basedpyright.com/latest/configuration/config-files/).
@@ -39,11 +42,11 @@ class BasedPyright(PythonToolBase):
     config_discovery = BoolOption(
         default=True,
         advanced=True,
-        help=lambda cls: softwrap(
-            f"""
+        help=softwrap(
+            """
             If true, Pants will include any relevant pyrightconfig.json and pyproject.toml config files during runs.
 
-            Use `[{cls.options_scope}].config` instead if your config is in a non-standard location.
+            Use `[basedpyright].config` instead if your config is in a non-standard location.
             """
         ),
     )

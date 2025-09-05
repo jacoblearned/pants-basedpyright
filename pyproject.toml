@@ -13,6 +13,7 @@ dev = [
     "pantsbuild.pants.testutil>=2.27.0,<2.28.0",
     "pytest>=7.0.1",
     "ruff>=0.12.11",
+    "basedpyright>=1.31.4",
 ]
 
 [tool.uv.sources]
@@ -28,3 +29,8 @@ select = ["E", "F", "B", "I", "PL"]
 ignore = [
     "E501",  # line too long - conflicts with fmt: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
 ]
+
+[tool.basedpyright]
+pythonVersion = "3.11"
+exclude = [".venv", "dist", "build", "__pypackages__", ".*cache"]
+reportImplicitOverride = false
