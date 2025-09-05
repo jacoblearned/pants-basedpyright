@@ -1,0 +1,22 @@
+#! /usr/bin/env bash
+
+set -euxo pipefail
+
+py_checks() {
+    uv run ruff format .
+    uv run ruff check --fix .
+    uv run basedpyright .
+    uv run pytest .
+    uv run bandit -c pyproject.toml -r .
+}
+
+precommit() {
+    echo "Running pre-commit checks"
+    root="$(git rev-parse --show-toplevel)"
+    cd "$root" || exit 1
+    py_checks
+}
+
+(
+    precommit
+)

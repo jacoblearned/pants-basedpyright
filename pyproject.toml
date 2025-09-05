@@ -7,8 +7,14 @@ requires-python = ">=3.11"
 
 [dependency-groups]
 dev = [
+    # We specify pantsbuild deps as dev deps so Pants doesn't try to install them
+    # as transitive dependencies of this plugin
     "pantsbuild.pants>=2.27.0,<2.28.0",
-    "pantsbuild.pants.testutil>=2.27.0,<2.28.0"
+    "pantsbuild.pants.testutil>=2.27.0,<2.28.0",
+    "pytest>=7.0.1",
+    "ruff>=0.12.11",
+    "basedpyright>=1.31.4",
+    "bandit>=1.8.6",
 ]
 
 [tool.uv.sources]
@@ -18,3 +24,17 @@ dev = [
 [[tool.uv.index]]
 name = "pants-wheels"
 url = "https://wheels.pantsbuild.org/simple/"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "PL"]
+ignore = [
+    "E501",  # line too long - conflicts with fmt: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+]
+
+[tool.basedpyright]
+pythonVersion = "3.11"
+exclude = [".venv"]
+reportImplicitOverride = false
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]

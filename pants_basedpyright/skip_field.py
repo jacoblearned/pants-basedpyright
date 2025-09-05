@@ -1,3 +1,5 @@
+from typing import final
+
 from pants.backend.python.target_types import (
     PythonSourcesGeneratorTarget,
     PythonSourceTarget,
@@ -8,6 +10,7 @@ from pants.backend.python.target_types import (
 from pants.engine.target import BoolField
 
 
+@final
 class SkipBasedPyrightField(BoolField):
     alias = "skip_basedpyright"
     default = False

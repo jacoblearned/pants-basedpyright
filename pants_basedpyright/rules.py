@@ -1,6 +1,5 @@
 import os
 from collections.abc import Iterable
-from typing import Optional
 
 from pants.backend.python.subsystems.setup import PythonSetup
 from pants.backend.python.util_rules import pex_from_targets
@@ -17,82 +16,31 @@ from pants.backend.python.util_rules.python_sources import (
 )
 from pants.core.goals.check import CheckRequest, CheckResult, CheckResults
 from pants.core.util_rules import config_files
-from pants.core.util_rules.source_files import SourceFilesRequest, determine_source_files
+from pants.core.util_rules.source_files import (
+    SourceFilesRequest,
+    determine_source_files,
+)
 from pants.engine.fs import Digest, MergeDigests
 from pants.engine.intrinsics import execute_process
-from pants.engine.rules import Get, collect_rules, concurrently, implicitly, rule
+from pants.engine.rules import (
+    Get,
+    collect_rules,
+    concurrently,
+    implicitly,  # pyright:ignore[reportUnknownVariableType]
+    rule,
+)
 from pants.engine.unions import UnionRule
 from pants.util.logging import LogLevel
 from pants.util.ordered_set import OrderedSet
 from pants.util.strutil import pluralize
 
-from .partition import BasedPyrightPartition, partition_basedpyright
-from .request import BasedPyrightRequest
-from .subsystem import BasedPyright
-
-# async def _patch_config_file(
-#     config_files: ConfigFiles, venv_dir: str, source_roots: Iterable[str]
-# ) -> Digest:
-#     """Patch the Pyright config file to use the incoming venv directory (from
-#     requirements_venv_pex). If there is no config file, create a dummy pyrightconfig.json with the
-#     `venv` key populated.
-
-#     The incoming venv directory works alongside the `--venvpath` CLI argument.
-
-#     Additionally, add source roots to the `extraPaths` key in the config file.
-#     """
-
-#     source_roots_list = list(source_roots)
-#     if not config_files.snapshot.files:
-#         # venv workaround as per: https://github.com/microsoft/pyright/issues/4051
-#         generated_config: dict[str, str | list[str]] = {
-#             "venv": venv_dir,
-#             "extraPaths": source_roots_list,
-#         }
-#         return await create_digest(
-#             CreateDigest(
-#                 [
-#                     FileContent(
-#                         "pyrightconfig.json",
-#                         json.dumps(generated_config).encode(),
-#                     )
-#                 ]
-#             )
-#         )
-
-#     config_contents = await get_digest_contents(config_files.snapshot.digest)
-#     new_files: list[FileContent] = []
-#     for file in config_contents:
-#         # This only supports a single json config file in the root of the project
-#         # https://github.com/pantsbuild/pants/issues/17816 tracks supporting multiple config files and workspaces
-#         if file.path == "pyrightconfig.json":
-#             json_config = json.loads(file.content)
-#             json_config["venv"] = venv_dir
-#             json_extra_paths: list[str] = json_config.get("extraPaths", [])
-#             json_config["extraPaths"] = list(OrderedSet(json_extra_paths + source_roots_list))
-#             new_content = json.dumps(json_config).encode()
-#             new_files.append(replace(file, content=new_content))
-
-#         # This only supports a single pyproject.toml file in the root of the project
-#         # https://github.com/pantsbuild/pants/issues/17816 tracks supporting multiple config files and workspaces
-#         elif file.path == "pyproject.toml":
-#             toml_config = toml.loads(file.content.decode())
-#             pyright_config = toml_config["tool"]["pyright"]
-#             pyright_config["venv"] = venv_dir
-#             toml_extra_paths: list[str] = pyright_config.get("extraPaths", [])
-#             pyright_config["extraPaths"] = list(OrderedSet(toml_extra_paths + source_roots_list))
-#             new_content = toml.dumps(toml_config).encode()
-#             new_files.append(replace(file, content=new_content))
-
-#     return await create_digest(CreateDigest(new_files))
+from pants_basedpyright.partition import BasedPyrightPartition, partition_basedpyright
+from pants_basedpyright.request import BasedPyrightRequest
+from pants_basedpyright.subsystem import BasedPyright
 
 
 def determine_python_files(files: Iterable[str]) -> tuple[str, ...]:
-    """We run over all .py and .pyi files, but .pyi files take precedence.
-
-    MyPy will error if we say to run over the same module with both its
-    .py and .pyi files, so we must be careful to only use the .pyi stub.
-    """
+    """We run over all .py and .pyi files, but .pyi files take precedence."""
     result: OrderedSet[str] = OrderedSet()
     for f in files:
         if f.endswith(".pyi"):
@@ -112,10 +60,10 @@ def determine_python_files(files: Iterable[str]) -> tuple[str, ...]:
 def _generate_argv(
     source_files: tuple[str, ...],
     python_path: str,
-    python_version: Optional[str],
+    python_version: str | None,
     basedpyright: BasedPyright,
 ) -> tuple[str, ...]:
-    args = []
+    args: list[str] = []
     args.extend(basedpyright.args)
     args.extend(["--pythonpath", python_path])
 
@@ -140,11 +88,12 @@ async def run_basedpyright(
     )
 
     closure_sources_get = prepare_python_sources(
-        PythonSourceFilesRequest(partition.root_targets.closure()), **implicitly()
+        PythonSourceFilesRequest(partition.root_targets.closure()),
+        **implicitly(),  # pyright:ignore[reportAny]
     )
 
     requirements_pex_get = create_pex(
-        **implicitly(
+        **implicitly(  # pyright:ignore[reportAny]
             RequirementsPexRequest(
                 (fs.address for fs in partition.field_sets),
                 hardcoded_interpreter_constraints=partition.interpreter_constraints,
@@ -153,8 +102,10 @@ async def run_basedpyright(
     )
 
     basedpyright_venv_pex_request = create_venv_pex(
-        **implicitly(
-            basedpyright.to_pex_request(interpreter_constraints=partition.interpreter_constraints)
+        **implicitly(  # pyright:ignore[reportAny]
+            basedpyright.to_pex_request(
+                interpreter_constraints=partition.interpreter_constraints
+            )
         )
     )
 
@@ -173,7 +124,7 @@ async def run_basedpyright(
     )
 
     requirements_venv_pex = await create_venv_pex(
-        **implicitly(
+        **implicitly(  # pyright:ignore[reportAny]
             PexRequest(
                 output_filename="requirements_venv.pex",
                 internal_only=True,
@@ -208,7 +159,7 @@ async def run_basedpyright(
         "PEX_EXTRA_SYS_PATH": ":".join(list(closure_sources.source_roots)),
     }
     result = await execute_process(
-        **implicitly(
+        **implicitly(  # pyright:ignore[reportAny]
             VenvPexProcess(
                 basedpyright_pex,
                 description=f"Run basedpyright on {pluralize(len(root_sources.snapshot.files), 'file')}.",
@@ -233,9 +184,10 @@ async def basedpyright_check(
     if basedpyright.skip:
         return CheckResults([], checker_name=request.tool_name)
 
-    partitions = await partition_basedpyright(request, **implicitly())
+    partitions = await partition_basedpyright(request, **implicitly())  # pyright:ignore[reportAny]
     partitioned_results = await concurrently(
-        run_basedpyright(partition, **implicitly()) for partition in partitions
+        run_basedpyright(partition, **implicitly())  # pyright:ignore[reportAny]
+        for partition in partitions
     )
     return CheckResults(partitioned_results, checker_name=request.tool_name)
 
