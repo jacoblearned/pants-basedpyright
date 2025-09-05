@@ -22,3 +22,9 @@ dev = [
 [[tool.uv.index]]
 name = "pants-wheels"
 url = "https://wheels.pantsbuild.org/simple/"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "PL"]
+ignore = [
+    "E501",  # line too long - conflicts with fmt: https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+]
