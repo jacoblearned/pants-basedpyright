@@ -1,0 +1,37 @@
+---
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.8, 3.9, 3.10, 3.12, 3.13, 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: |-
+            3.8
+            3.9
+            3.10
+            3.12
+            3.13
+            3.11
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.15"
+      - name: Sync project
+        run: uv sync --locked --all-extras --dev
+      - name: Check format
+        run: uv run ruff format --diff --check
+      - name: Check lint
+        run: uv run ruff check --output-format=github
+      - name: Type check
+        run: uv run basedpyright .
+      - name: Run security checks
+        run: uv run bandit -c pyproject.toml -r .
+      - name: Run tests
+        run: uv run pytest .
