@@ -4,6 +4,20 @@ version = "0.1.0"
 description = "Pantsbuild plugin for basedpyright type checking"
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [
+    {name = "Jacob Learned"},
+]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["pants", "pantsbuild", "basedpyright", "monorepo", "type checking"]
+
+[project.urls]
+Homepage = "https://github.com/jacoblearned/pants-basedpyright"
+Documentation = "https://github.com/jacoblearned/pants-basedpyright"
+Repository = "https://github.com/jacoblearned/pants-basedpyright"
+Issues = "https://github.com/jacoblearned/pants-basedpyright/issues"
+Changelog = "https://github.com/jacoblearned/pants-basedpyright/blob/main/CHANGELOG.md"
+
 
 [dependency-groups]
 dev = [
@@ -16,6 +30,10 @@ dev = [
     "basedpyright>=1.31.4",
     "bandit>=1.8.6",
 ]
+
+[build-system]
+requires = ["hatchling >= 1.27"]
+build-backend = "hatchling.build"
 
 [tool.uv.sources]
 "pantsbuild.pants" = {index = "pants-wheels"}

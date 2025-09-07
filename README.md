@@ -35,8 +35,6 @@ backend_packages = [
 ]
 ```
 
-
-
 ## Configuration
 
 ### Config File Discovery
