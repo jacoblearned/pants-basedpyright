@@ -1,15 +1,25 @@
 # pants-basedpyright
 
-[basedpyright](https://docs.basedpyright.com/latest/) is a fast type checker for Python, forked from [Pyright](https://github.com/microsoft/pyright),
-that removes the runtime dependency on Node.js and adds [several other improvements](https://docs.basedpyright.com/latest/benefits-over-pyright/better-defaults/).
+![PyPI - Version](https://img.shields.io/pypi/v/pants-basedpyright)
+![PyPI - License](https://img.shields.io/pypi/l/pants-basedpyright)
+
+
+[basedpyright](https://docs.basedpyright.com/latest/) is a fast type checker for Python, forked from [Pyright](https://github.com/microsoft/pyright).
+Unlike Pyright, however, it does not depend on an active Node.js installation. This makes it simpler to integrate Pyright-compatible type checking into pure Python projects without
+depending on a separate JavaScript runtime.
+
+basedpyright also provides [several other benefits](https://docs.basedpyright.com/latest/benefits-over-pyright/better-defaults/)
+like [baseline support](https://docs.basedpyright.com/latest/benefits-over-pyright/baseline/).
 
 This repo contains a plugin for the [Pants](https://www.pantsbuild.org/) monorepo build system to integrate `basedpyright`
 into Pants's type checking workflow.
 
+Supports Pants versions **v2.27** and **v2.28**.
+
 ## Features
 
 - Runs [basedpyright](https://docs.basedpyright.com/latest/) type checking during `$ pants check` [goal](https://www.pantsbuild.org/stable/docs/using-pants/key-concepts/goals) against appropriate Python [targets](https://www.pantsbuild.org/stable/docs/using-pants/key-concepts/targets-and-build-files).
-- No dependency on Node.js, making it easier to integrate `pyright` checks into monorepos that don't want to enable Node.js for Python tooling.
+- No dependency on Node.js, making it easier to integrate `pyright` checks into monorepos that don't want to manage Node.js environments and dependencies for Python tooling.
 - Automatic [config file](https://docs.basedpyright.com/latest/configuration/config-files/) detection in the workspace root (`pyrightconfig.json` as well as the `[tool.basedpyright]` or `[tool.pyright]` sections of a `pyproject.toml` file).
 - Explicit config file path support via `[basedpyright].config` section of `pants.toml` or CLI arguments , e.g. `$ pants check --basedpyright-config="path/to/config.<json|toml>" ::`.
 - Supports installation from [resolves](https://www.pantsbuild.org/stable/docs/python/overview/lockfiles#getting-started-with-resolves)
@@ -21,7 +31,7 @@ Add `pants-basedpyright` to your `plugins` list in `pants.toml`:
 ```toml
 [GLOBAL]
 plugins = [
-    "pants-basedpyright==0.1.0",
+    "pants-basedpyright==0.2.0",
 ]
 ```
 
