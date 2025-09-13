@@ -23,6 +23,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           version: "0.8.15"
+          enable-cache: true
       - name: Sync project
         run: uv sync --locked --all-extras --dev
       - name: Check format

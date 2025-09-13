@@ -1,0 +1,38 @@
+name: Release pants-basedpyright
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    environment: Publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.15"
+          enable-cache: true
+
+      - name: Sync project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Build dist
+        run: uv build --no-sources
+
+      - name: Publish
+        run: uv publish
+

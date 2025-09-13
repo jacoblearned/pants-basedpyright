@@ -1,6 +1,6 @@
 [project]
 name = "pants-basedpyright"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pantsbuild plugin for basedpyright type checking"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,8 +23,8 @@ Changelog = "https://github.com/jacoblearned/pants-basedpyright/blob/main/CHANGE
 dev = [
     # We specify pantsbuild deps as dev deps so Pants doesn't try to install them
     # as transitive dependencies of this plugin
-    "pantsbuild.pants>=2.27.0,<2.28.0",
-    "pantsbuild.pants.testutil>=2.27.0,<2.28.0",
+    "pantsbuild.pants>=2.27.0,<2.29.0",
+    "pantsbuild.pants.testutil>=2.27.0,<2.29.0",
     "pytest>=7.0.1",
     "ruff>=0.12.11",
     "basedpyright>=1.31.4",
