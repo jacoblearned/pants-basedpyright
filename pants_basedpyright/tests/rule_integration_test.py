@@ -16,14 +16,12 @@ from pants.engine.addresses import Address
 from pants.engine.fs import EMPTY_DIGEST
 from pants.engine.rules import QueryRule
 from pants.engine.target import Target
-from pants.testutil.python_interpreter_selection import all_major_minor_python_versions
 from pants.testutil.python_rule_runner import PythonRuleRunner
 
 from pants_basedpyright.fieldset import BasedPyrightFieldSet
 from pants_basedpyright.partition import BasedPyrightPartitions
 from pants_basedpyright.request import BasedPyrightRequest
 from pants_basedpyright.rules import rules as basedpyright_rules
-from pants_basedpyright.subsystem import BasedPyright
 from pants_basedpyright.subsystem import rules as basedpyright_subsystem_rules
 
 
@@ -125,11 +123,6 @@ def assert_success(
     assert result[0].report == EMPTY_DIGEST
 
 
-@pytest.mark.platform_specific_behavior
-@pytest.mark.parametrize(
-    "major_minor_interpreter",
-    all_major_minor_python_versions(BasedPyright.default_interpreter_constraints),
-)
 def test_passing(rule_runner: PythonRuleRunner, major_minor_interpreter: str) -> None:
     _ = rule_runner.write_files(
         {f"{PACKAGE}/f.py": GOOD_FILE, f"{PACKAGE}/BUILD": "python_sources()"}

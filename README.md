@@ -3,7 +3,6 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/pants-basedpyright)
 ![PyPI - License](https://img.shields.io/pypi/l/pants-basedpyright)
 
-
 [basedpyright](https://docs.basedpyright.com/latest/) is a fast type checker for Python, forked from [Pyright](https://github.com/microsoft/pyright).
 Unlike Pyright, however, it does not depend on an active Node.js installation. This makes it simpler to integrate Pyright-compatible type checking into pure Python projects without
 depending on a separate JavaScript runtime.
@@ -14,7 +13,7 @@ like [baseline support](https://docs.basedpyright.com/latest/benefits-over-pyrig
 This repo contains a plugin for the [Pants](https://www.pantsbuild.org/) monorepo build system to integrate `basedpyright`
 into Pants's type checking workflow.
 
-Supports Pants versions **v2.27** and **v2.28**.
+Supports Pants versions **v2.27** - **2.29**.
 
 ## Features
 

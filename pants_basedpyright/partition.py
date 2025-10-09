@@ -8,7 +8,7 @@ from pants.backend.python.util_rules.partition import (
     _partition_by_interpreter_constraints_and_resolve,  # pyright:ignore[reportPrivateUsage]
 )
 from pants.engine.collection import Collection
-from pants.engine.internals.graph import coarsened_targets as coarsened_targets_get
+from pants.engine.internals.graph import resolve_coarsened_targets
 from pants.engine.rules import (
     collect_rules,
     implicitly,  # pyright:ignore[reportUnknownVariableType]
@@ -51,7 +51,7 @@ async def partition_basedpyright(
         )
     )
 
-    coarsened_targets = await coarsened_targets_get(
+    coarsened_targets = await resolve_coarsened_targets(
         CoarsenedTargetsRequest(field_set.address for field_set in request.field_sets),
         **implicitly(),  # pyright:ignore[reportAny]
     )
